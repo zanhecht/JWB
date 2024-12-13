@@ -142,11 +142,10 @@ window.JWB = {}; //The main global object for the script.
 
 	(new mw.Api()).get({
 		action: 'query',
-		titles: 'Project:AutoWikiBrowser/CheckPageJSON',
+		titles: 'Project:AutoWikiBrowser/CheckPageJSON|MediaWiki:Tag-JWB',
 		prop: 'info|revisions',
 		meta: 'userinfo|siteinfo',
 		rvprop: 'content',
-		rvlimit: 1,
 		uiprop: 'groups',
 		siprop: 'namespaces|usergroups|extensions',
 		indexpageids: true,
@@ -179,7 +178,9 @@ window.JWB = {}; //The main global object for the script.
 		
 		JWB.username = response.query.userinfo.name; //preventing any "hacks" that change wgUserName or mw.config.wgUserName
 		var groups = response.query.userinfo.groups;
-		var page = response.query.pages[response.query.pageids[0]];
+		var page = Object.values(response.query.pages).find(page => page.title.includes("AutoWikiBrowser/CheckPageJSON"));
+		var tagPage = Object.values(response.query.pages).find(page => page.title.includes("Tag-JWB"));
+		JWB.hasTag = (tagPage.missing === undefined);
 		var users = [];
 		var bots = [];
 		JWB.sysop = groups.indexOf('sysop') !== -1;
@@ -492,12 +493,12 @@ JWB.api.submit = function(page) {
 		title: JWB.page.name,
 		summary: summary,
 		action: 'edit',
-		//tags: 'JWB',
 		basetimestamp: JWB.page.revisions ? JWB.page.revisions[0].timestamp : '',
 		token: JWB.page.token,
 		text: newval,
 		watchlist: $('#watchPage').val()
 	};
+	if (JWB.hasTag) data.tags = 'JWB';
 	if ($('#minorEdit').prop('checked')) data.minor = true;
 	JWB.api.call(data, function(response) {
 		JWB.log('edit', response.edit.title, response.edit.newrevid);
@@ -1869,8 +1870,8 @@ JWB.init = function() {
 	);
 	$('.JWBtabc[data-tab="2"]').html(
 		'<label class="minorEdit"><input type="checkbox" id="minorEdit" accesskey="i" checked> '+JWB.msg('minor-edit')+'</label>'+
-		'<label class="editSummary viaJWB">'+JWB.msg('edit-summary')+'<br/> <input class="fullwidth" type="text" id="summary" maxlength="500" accesskey="b"></label>'+
-		' <input type="checkbox" id="viaJWB" checked title="'+JWB.msg('tip-via-JWB')+'">'+
+		'<label class="editSummary'+(JWB.hasTag?'':' viaJWB')+'">'+JWB.msg('edit-summary')+'<br/> <input class="fullwidth" type="text" id="summary" maxlength="500" accesskey="b"></label>'+
+		' <input type="checkbox" id="viaJWB"'+(JWB.hasTag?'':' checked')+' title="'+JWB.msg('tip-via-JWB')+'">'+
 		'<select id="watchPage">'+
 			'<option value="watch">'+JWB.msg('watch-watch')+'</option>'+
 			'<option value="unwatch">'+JWB.msg('watch-unwatch')+'</option>'+
