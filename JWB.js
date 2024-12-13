@@ -239,8 +239,9 @@ window.JWB = {}; //The main global object for the script.
 //Main template for API calls
 JWB.api.call = function(data, callback, onerror) {
 	data.format = 'json';
-	if (data.action !== 'query' && data.action !== 'compare' && data.action !== 'ask' && data.action !== 'parse') {
+	if (data.action !== 'query' && data.action !== 'compare' && data.action !== 'ask' && data.action !== 'parse' && data.action !== 'watch') {
 		data.bot = true; // mark edits as bot
+		if (JWB.hasTag) data.tags = 'JWB'; // tag with 'JWB'
 	}
 	$.ajax({
 		data: data,
@@ -498,7 +499,6 @@ JWB.api.submit = function(page) {
 		text: newval,
 		watchlist: $('#watchPage').val()
 	};
-	if (JWB.hasTag) data.tags = 'JWB';
 	if ($('#minorEdit').prop('checked')) data.minor = true;
 	JWB.api.call(data, function(response) {
 		JWB.log('edit', response.edit.title, response.edit.newrevid);
@@ -1133,7 +1133,7 @@ JWB.setup.load = function() {
 };
 
 JWB.setup.moveNew = function(from, to, token) {
-	(new mw.Api()).post({
+	var data = {
 		action: 'move',
 		from: from,
 		to: to,
@@ -1143,7 +1143,9 @@ JWB.setup.moveNew = function(from, to, token) {
 		movesubpages: true, // if any
 		movetalk: true, // if any
 		ignorewarnings: true,
-	}).done(function(response) {
+	};
+	if (JWB.hasTag) data.tags = 'JWB';
+	(new mw.Api()).post(data).done(function(response) {
 		if (response.error === undefined) {
 			JWB.log('move', from, to);
 			JWB.settingspage = to.split('/')[1];
